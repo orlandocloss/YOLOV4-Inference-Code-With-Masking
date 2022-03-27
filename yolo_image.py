@@ -127,18 +127,17 @@ def crop_labels(imgpath, categories):
     mask=np.zeros((H, W,3), np.uint8)
     n=len(categories['Classes'])
     for index in range(0, n):
-        if categories['Classes'][index] != 0:
-            w=categories['Width'][index]
-            h=categories['Height'][index]
-            x=categories['X-Coordinate'][index]
-            y=categories['Y-Coordinate'][index]
-            crop=image[y:(y+h), x:(x+w)]
-            mask[y:(y+h), x:(x+w)] = crop
-            text = "{}: {:.4f}".format(lbls[categories['Classes'][index]], categories['Confidence'][index])
-            color = [int(c) for c in COLORS[categories['Classes'][index]]]
-            cv2.putText(
-                mask, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
-            )
+    	w=categories['Width'][index]
+   	h=categories['Height'][index]
+   	x=categories['X-Coordinate'][index]
+   	y=categories['Y-Coordinate'][index]
+   	crop=image[y:(y+h), x:(x+w)]
+   	mask[y:(y+h), x:(x+w)] = crop
+   	text = "{}: {:.4f}".format(lbls[categories['Classes'][index]], categories['Confidence'][index])
+   	color = [int(c) for c in COLORS[categories['Classes'][index]]]
+	cv2.putText(
+		mask, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
+     	)
     cv2.namedWindow("mask", cv2.WINDOW_NORMAL) 
     cv2.imshow("mask", mask)
     if args.mask_output != "":
