@@ -14,6 +14,7 @@
  if program cant find yolo folder in main folder it will crash."""
 # example usage: python yolo_image.py -i street.jpg -o output.jpg
 import argparse
+from cProfile import label
 import time
 import glob
 
@@ -29,6 +30,8 @@ parser.add_argument("-c", "--confidence", type=float, default=0.5,
 	help="minimum probability to filter weak detections")
 parser.add_argument("-t", "--threshold", type=float, default=0.4,
 	help="threshold for non maxima supression")
+parser.add_argument("-m", "--mask_output", type=str, default="",
+	help="path to (optional) mask output image file. Write only the name, without extension.")
 
 args = parser.parse_args()
 
@@ -57,6 +60,7 @@ layer = [layer[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
 
 def detect(imgpath, nn):
+    global categories
     image = cv2.imread(imgpath)
     (H, W) = image.shape[:2]
 
@@ -69,6 +73,7 @@ def detect(imgpath, nn):
     boxes = list()
     confidences = list()
     class_ids = list()
+    categories={'Classes': [], 'Confidence': [], 'X-Coordinate': [], 'Y-Coordinate': [], 'Width': [], 'Height': []}
 
     for output in layer_outs:
         for detection in output:
@@ -93,6 +98,13 @@ def detect(imgpath, nn):
             (x, y) = (boxes[i][0], boxes[i][1])
             (w, h) = (boxes[i][2], boxes[i][3])
 
+            categories['X-Coordinate'].append(x)
+            categories['Y-Coordinate'].append(y)
+            categories['Width'].append(w)
+            categories['Height'].append(h)
+            categories['Classes'].append(class_ids[i])
+            categories['Confidence'].append(confidences[i])
+
             color = [int(c) for c in COLORS[class_ids[i]]]
             cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
             text = "{}: {:.4f}".format(lbls[class_ids[i]], confidences[i])
@@ -103,11 +115,35 @@ def detect(imgpath, nn):
             cv2.putText(
                 image, label, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2
             )
-
+    cv2.namedWindow("image", cv2.WINDOW_NORMAL) 
     cv2.imshow("image", image)
     if args.output != "":
         cv2.imwrite(args.output, image)
     cv2.waitKey(0)
 
+def crop_labels(imgpath, categories): 
+    image = cv2.imread(imgpath)
+    (H, W) = image.shape[:2]
+    mask=np.zeros((H, W,3), np.uint8)
+    n=len(categories['Classes'])
+    for index in range(0, n):
+        if categories['Classes'][index] != 0:
+            w=categories['Width'][index]
+            h=categories['Height'][index]
+            x=categories['X-Coordinate'][index]
+            y=categories['Y-Coordinate'][index]
+            crop=image[y:(y+h), x:(x+w)]
+            mask[y:(y+h), x:(x+w)] = crop
+            text = "{}: {:.4f}".format(lbls[categories['Classes'][index]], categories['Confidence'][index])
+            color = [int(c) for c in COLORS[categories['Classes'][index]]]
+            cv2.putText(
+                mask, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
+            )
+    cv2.namedWindow("mask", cv2.WINDOW_NORMAL) 
+    cv2.imshow("mask", mask)
+    if args.mask_output != "":
+        cv2.imwrite(args.mask_output, mask)
+    cv2.waitKey(0)
 
 detect(impath, net)
+crop_labels(impath, categories)
