@@ -35,6 +35,8 @@ parser.add_argument("-i", "--input", type=str, default="",
                     help="path to input video file")
 parser.add_argument("-o", "--output", type=str, default="",
                     help="path to (optional) output video file")
+parser.add_argument("-m", "--mask_output", type=str, default="",
+                    help="path to (optional) mask output video file")
 parser.add_argument("-d", "--display", type=int, default=1,
                     help="display output or not (1/0)")
 parser.add_argument("-ht", "--height", type=int, default=1200,
@@ -74,9 +76,11 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 layer = net.getLayerNames()
 layer = [layer[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 writer = None
+mask_writer = None
 
 
 def detect(frm, net, ln):
+    global categories
     (H, W) = frm.shape[:2]
     blob = cv2.dnn.blobFromImage(frm, 1 / 255.0, (416, 416), swapRB=True, crop=False)
     net.setInput(blob)
@@ -87,6 +91,7 @@ def detect(frm, net, ln):
     boxes = []
     classIds = []
     confidences = []
+    categories={'Classes': [], 'Confidence': [], 'X-Coordinate': [], 'Y-Coordinate': [], 'Width': [], 'Height': []}
     for output in layerOutputs:
         for detection in output:
             scores = detection[5:]
@@ -121,23 +126,59 @@ def detect(frm, net, ln):
             cv2.putText(
                 frm, fps_label, (0, 25), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2
             )
+            categories['X-Coordinate'].append(x)
+            categories['Y-Coordinate'].append(y)
+            categories['Width'].append(w)
+            categories['Height'].append(h)
+            categories['Classes'].append(classIds[i])
+            categories['Confidence'].append(confidences[i])
 
+def crop_labels(frm): 
+    global categories
+    (H, W) = frm.shape[:2]
+    mask=np.zeros((H, W,3), np.uint8)
+    n=len(categories['Classes'])
+    for index in range(0, n):
+      w=categories['Width'][index]
+      h=categories['Height'][index]
+      x=categories['X-Coordinate'][index]
+      y=categories['Y-Coordinate'][index]
+      crop=frm[y:(y+h), x:(x+w)]
+      mask[y:(y+h), x:(x+w)] = crop
+      text = "{}: {:.4f}".format(class_names[categories['Classes'][index]], categories['Confidence'][index])
+      color = [int(c) for c in COLORS[categories['Classes'][index]]]
+      cv2.putText(
+          mask, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2
+      )
+    return mask
 
 while cv2.waitKey(1) < 1:
     (grabbed, frame) = vc.read()
     if not grabbed:
         break
-    frame = cv2.resize(frame, (args.height, args.width))
+    #frame = cv2.resize(frame, (args.height, args.width))
     detect(frame, net, layer)
+    mask = crop_labels(frame)
 
     if args.display == 1:
+        cv2.namedWindow("detections", cv2.WINDOW_NORMAL) 
         cv2.imshow("detections", frame)
+        cv2.namedWindow("mask", cv2.WINDOW_NORMAL) 
+        cv2.imshow("mask", mask)
 
     if args.output != "" and writer is None:
         fourcc = cv2.VideoWriter_fourcc(*"MJPG")
         writer = cv2.VideoWriter(
             args.output, fourcc, 25, (frame.shape[1], frame.shape[0]), True
         )
+    if args.mask_output != "" and mask_writer is None:
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
+        mask_writer = cv2.VideoWriter(
+            args.mask_output, fourcc, 25, (mask.shape[1], mask.shape[0]), True
+        )
 
     if writer is not None:
         writer.write(frame)
+    
+    if mask_writer is not None:
+        mask_writer.write(mask)
