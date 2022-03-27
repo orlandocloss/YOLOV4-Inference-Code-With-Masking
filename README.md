@@ -1,6 +1,6 @@
 # Simple Inference Scripts for YOLO with OpenCV (With Mask Output Option)
 
-I forked a YOLOv4 inference script from erentknn for both video and image files, easy to use and not complicated.
+I forked a YOLOv4 inference script from 'erentknn' for both video and image files, easy to use and not complicated.
 
 The edits in this fork add a 'mask_output' cropping the labels onto a black background.
 
