@@ -8,7 +8,7 @@ The edits in this fork add a 'mask_output' cropping the labels onto a black back
 
 ``` python yolo_image.py -i street.jpg -o output.jpg -m mask_output.jpg ```
 
-``` python yolo_video.py -i video.mp4 -o video_out.avi -m mask_output.jpg```
+``` python yolo_video.py -i video.mp4 -o video_out.avi -m mask_output.avi```
 
 ## Your Code Edits
 
