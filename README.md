@@ -1,4 +1,4 @@
-# Simple Inference Scripts for YOLO with OpenCV
+# Simple Inference Scripts for YOLO with OpenCV (With Mask Output Option)
 
 I forked a YOLOv4 inference script for both video and image files, easy to use and not complicated.
 
