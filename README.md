@@ -13,7 +13,9 @@ The edits in this fork add a 'mask_output' cropping the labels onto a black back
 ## Your Code Edits
 
 ``` weights = glob.glob("yolo/*.weights")[0] ```
+
 ``` labels = glob.glob("yolo/*.txt")[0] ```
+
 ``` cfg = glob.glob("yolo/*.cfg")[0] ```
 
 Change these lines in the script to your weights, labels and cfg files. 
